@@ -8,16 +8,32 @@ BUBBLE_COLOR_SCALE = [
     [0.6, "#A6BDDB"], [0.8, "#74A9CF"], [1, "#2B8CBE"],
 ]
 
+import pandas as pd
+
 def create_map_figure(client_data, selected_client):
     if len(client_data) <= 1:
         return go.Figure().add_annotation(text=f"Insufficient data for {selected_client}", showarrow=False)
-
-    fig = create_base_map(client_data)
-    add_connections_to_map(fig, client_data)
-    update_layout(fig, client_data, selected_client)
-    add_top_cities_annotations(fig, client_data)
+    
+    # Group by city and aggregate depart days, concatenate competitors
+    client_data_grouped = client_data.groupby('origincity_code', as_index=False).agg({
+        'sum': 'sum',  # Aggregating departure days by sum
+        'origincity_lat': 'first',
+        'origincity_long': 'first',
+        'country_code_origin': 'first',
+        'competitors': lambda x: ', '.join(x.unique())  # Combine all unique competitors into a single string
+    })
+    
+    # Create the base map with the modified hover information
+    fig = create_base_map(client_data_grouped)
+    
+    # Add connections to the map and retain the legend functionality for competitors
+    add_connections_to_map(fig, client_data_grouped)
+    update_layout(fig, client_data_grouped, selected_client)
+    add_top_cities_annotations(fig, client_data_grouped)
     add_explanation_annotation(fig)
-    add_competitor_legend(fig, client_data)
+    
+    # Keep the original legend for competitors
+    add_competitor_legend(fig, client_data)  # Passing the original client_data to retain distinct competitors
 
     return fig
 
@@ -27,7 +43,13 @@ def create_base_map(client_data):
         lat="origincity_lat", 
         lon="origincity_long", 
         hover_name="origincity_code",
-        hover_data={"country_code_origin": True, "sum": True, "origincity_lat": False, "origincity_long": False, "competitors": True},
+        hover_data={
+            "country_code_origin": True, 
+            "sum": True, 
+            "origincity_lat": False, 
+            "origincity_long": False, 
+            "competitors": True  # Show all competitors in the hover text
+        },
         size='sum',
         color='sum',
         size_max=40,
@@ -35,6 +57,7 @@ def create_base_map(client_data):
         mapbox_style="carto-positron",
         color_continuous_scale=BUBBLE_COLOR_SCALE
     )
+
 
 def add_connections_to_map(fig, client_data):
     client_data_sorted = client_data.sort_values('sum', ascending=False)
