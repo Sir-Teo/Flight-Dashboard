@@ -4,7 +4,7 @@ from data_processing import load_and_process_data
 from layout import create_app_layout
 from callbacks import register_callbacks
 
-FILE_PATH = 'parsed_data.csv'
+FILE_PATH = 'client_depart_days_count_aggregated.csv'
 
 def main():
     data = load_and_process_data(FILE_PATH)

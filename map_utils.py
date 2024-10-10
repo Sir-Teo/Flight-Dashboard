@@ -8,34 +8,21 @@ BUBBLE_COLOR_SCALE = [
     [0.6, "#A6BDDB"], [0.8, "#74A9CF"], [1, "#2B8CBE"],
 ]
 
-import pandas as pd
 
 def create_map_figure(client_data, selected_client):
-    if len(client_data) <= 1:
-        return go.Figure().add_annotation(text=f"Insufficient data for {selected_client}", showarrow=False)
-    
-    # Group by city and aggregate depart days, concatenate competitors
-    client_data_grouped = client_data.groupby('origincity_code', as_index=False).agg({
-        'sum': 'sum',  # Aggregating departure days by sum
-        'origincity_lat': 'first',
-        'origincity_long': 'first',
-        'country_code_origin': 'first',
-        'competitors': lambda x: ', '.join(x.unique())  # Combine all unique competitors into a single string
-    })
-    
-    # Create the base map with the modified hover information
-    fig = create_base_map(client_data_grouped)
-    
-    # Add connections to the map and retain the legend functionality for competitors
-    add_connections_to_map(fig, client_data_grouped)
-    update_layout(fig, client_data_grouped, selected_client)
-    add_top_cities_annotations(fig, client_data_grouped)
-    add_explanation_annotation(fig)
-    
-    # Keep the original legend for competitors
-    add_competitor_legend(fig, client_data)  # Passing the original client_data to retain distinct competitors
-
+    fig = go.Figure()
+    # Use 'Depart_Days_Count_Sum' and 'all_competitors'
+    for index, row in client_data.iterrows():
+        fig.add_trace(go.Scattergeo(
+            lon=[row['origincity_long'], row['destcity_long']],
+            lat=[row['origincity_lat'], row['destcity_lat']],
+            mode='lines',
+            line=dict(width=row['Depart_Days_Count_Sum'] / 10),  # Adjust line width based on sum
+            hovertext=f"{row['origincity_code']} to {row['destcity_code']}",
+            customdata=[row['Depart_Days_Count_Sum'], row['all_competitors']],  # Display all_competitors
+        ))
     return fig
+
 
 def create_base_map(client_data):
     return px.scatter_mapbox(
