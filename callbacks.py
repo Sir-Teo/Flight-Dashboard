@@ -15,10 +15,9 @@ def register_callbacks(app, data):
         click_info = "Click on a point to see more information."
         if click_data:
             point = click_data['points'][0]
-            if 'hovertext' in point and 'customdata' in point:
-                competitors = point['customdata'][2]  # Update to include competitors
-                click_info = f"Clicked on: {point['hovertext']} - Depart Days: {point['customdata'][1]:,} - Competitors: {competitors}"
-            else:
-                click_info = "Click on a valid point to see more information."
+            if 'text' in point:
+                click_info = f"Clicked on: {point['text']}"
+            elif 'hovertext' in point:
+                click_info = point['hovertext']
         
         return fig, click_info
